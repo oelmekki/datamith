@@ -1,0 +1,72 @@
+= Datamith
+
+Datamith is a MySQL database conversion/import/fusion framework. To use it, you will have to define some rules in the <tt>tables/</tt> directory.
+
+A rule is a class derivated from Datamith::Converter. It can :
+
+* simply transfert data
+* update data if a record already exists
+* take the value of one field and load it in an other field
+* do some basic type conversion between datetime and timestamp
+* append data instead of preserving the primary key if append mode is set ( tweakable on a per record basis with a Proc conditionnal )
+* remember the old primary value and the new one to keep track of the associations when in append mode
+
+There is one rule file per table to convert, and each set of rules is lauched individually against each row. A rule file and the class it contains must be named accordingly. The filename can be prefixed with a number to set the order.
+
+== Configuration
+
+You should set the hosts, users, passwords and databases in config.yml.
+
+== Execution
+
+When you're done with your rules, simply launch :
+  rake convert
+
+If you prefer a dump as a sql file, you can use instead :
+  rake convert_dump
+
+( You are responsible of the output redirection )
+
+== Conversion
+
+You will find more informations in the documentation for Datamith::Converter .
+Here is a example of what can be done :
+
+
+  # tables/10_User.rb
+  class User < Converter
+    @@old_table = "xy_user"
+    @@new_table = "users"
+    @@old_primary_key = :account_number
+    @@skip = %w( 1 2 )
+
+    def run
+      append :condition => Proc.new { |old,new| ( 15..20 ).include?( old[ :account_number ] ) }
+      convert :int, :account_number, :id
+      convert :string, :name
+      convert :timestamp_to_datetime, :created_at
+    end
+  end
+ 
+  # tables/20_Post.rb
+  class Post < Converter
+    @@old_table = "post"
+    @@new_table = "posts"
+
+    def run
+      appended_FK :user_id, :user
+      convert :int, :id
+      convert :int, :user_id
+      convert :string, :text
+    end
+  end
+ 
+Here, the user table is converted in first place. The primary key of the old table, named `xy_user`, is `account_number`. It is
+converted to `id`, the records with value 1 and 2 are skipped and those between 15 and 20 are appended as new record instead
+of simply import them.
+
+Then, the `post` table is proceeded. The `user_id` field refers to the id in `users`, so when the converter find a value between
+15 and 20 ( which has been re-inserted ), it corrects it with the new id value. This is provided by the appended_FK() method.
+
+For all the other records in `users` and for all the records in `posts` the converter check if the primary value exists in the new
+table. If so, it updates the record ; else it inserts it.
