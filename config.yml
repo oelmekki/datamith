@@ -1,0 +1,11 @@
+database_from:
+  host: localhost
+  user: user
+  passwd: password
+  database: database_name
+
+database_to:
+  host: localhost
+  user: user
+  passwd: password
+  database: database_name
