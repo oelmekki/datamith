@@ -6,12 +6,9 @@ require 'Runner'
 
 describe Datamith::Runner do
   before( :each ) do
-    @old_db_params = { :host => 'foo', :user => 'foo', :passwd => 'foo', :db => 'foo' }
-    @new_db_params = { :host => 'bar', :user => 'bar', :passwd => 'bar', :db => 'bar' }
+    Datamith::Converter::init()
     db = mock( "database", :get => [1, 2, 3 ], :record_exists? => true, :match => true )
     Datamith::Database.stub!(:new).and_return( db )
-    Datamith::Converter.stub!(:query)
-    Datamith::Converter.stub!(:results).and_return( 'ok' )
   end
 
   it "should connect to dbs" do

@@ -1,24 +1,26 @@
 #!/usr/bin/env ruby
 require 'spec'
 require File.expand_path( File.join( File.dirname(__FILE__), 'spec_helper' ) )
+require 'Runner'
 require 'Converter'
-require "#{SPEC_ROOT}/fixtures/B.rb"
-require "#{SPEC_ROOT}/fixtures/C.rb"
-require "#{SPEC_ROOT}/fixtures/D.rb"
 
 def mock_db( stubs={} )
   return mock( 'database', stubs )
 end
 
-def simple_run
-  b = B.new @old_attrs, mock_db, mock_db
-  b.run
-  return b
+def simple_run( class_str="B", stubs_old={}, stubs_new={} )
+  load "#{SPEC_ROOT}/fixtures/#{class_str}.rb"
+  class_name = Object.const_get( class_str )
+  converter = class_name.new @old_attrs, mock_db( stubs_old ), mock_db( stubs_new )
+  converter.run
+  return converter
 end
 
 describe Datamith::Converter do
 
   before( :each ) do
+    Datamith::Converter::init()
+
     @old_attrs = { :id      => "1", 
                    :name    => 'old_name', 
                    :gender  => 'i', 
@@ -56,28 +58,22 @@ describe Datamith::Converter do
   end
 
   it "should not insert new data if insert is false" do
-    b = B.new @old_attrs, mock_db, mock_db( { :record_exists? => false } )
-    b.run
+    b = simple_run( "B", {}, { :record_exists? => false } )
     b.config :insert, false
     lambda { b.query }.should_not change( B, :inserted )
-    b.config :insert, true
   end
 
   it "should not update data if update is false" do
-    b = B.new @old_attrs, mock_db, mock_db( { :record_exists? => true, :match => false } )
-    b.run
+    b = simple_run( "B", {}, { :record_exists? => true, :match => false } )
     b.config :update, false
     lambda { b.query }.should_not change( B, :updated )
-    b.config :update, true
   end
 
   it "should stock and retrieve new id if in append mode" do
-    c = C.new @old_attrs, mock_db, mock_db( { :record_exists? => false, :query => 10 } )
-    c.run
+    c = simple_run( "C", {}, { :record_exists? => false, :query => 10 } )
     c.query
     @old_attrs[ :c_id ] = 1
-    d = D.new @old_attrs, mock_db, mock_db
-    d.run
+    d = simple_run( "D" )
     d.new_attrs[ :c_id ].should == "10"
   end
 end

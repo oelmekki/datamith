@@ -39,7 +39,6 @@ module Datamith
     def run() # :nodoc:
       # find the tables files
       files = Dir.glob( ROOT + "/tables/*" ).sort
-      p ROOT # DEBUG
       files.each do |file|
         if ( converter_class = load_rules file )
 

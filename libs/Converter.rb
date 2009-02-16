@@ -331,6 +331,10 @@ module Datamith
       class_variable_get :@@new_primary_key
     end
 
+    def self.skip() # :nodoc:
+      class_variable_get :@@skip
+    end
+
     def self.results() # :nodoc:
       res = sprintf "-- Inserted: %i, Updated: %i, No change: %i, Skipped: %i\n", @@results[ :inserted ], @@results[ :updated ], @@results[ :nochange ], @@results[ :skipped ]
       self.init
