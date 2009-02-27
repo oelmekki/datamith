@@ -5,6 +5,7 @@ Datamith is a MySQL database conversion/import/fusion framework. To use it, you 
 A rule is a class derivated from Datamith::Converter. It can :
 
 * simply transfert data
+* convert charset ( using iconv )
 * update data if a record already exists
 * take the value of one field and load it in an other field
 * do some basic type conversion between datetime and timestamp
@@ -39,6 +40,7 @@ Here is a example of what can be done :
     @@new_table = "users"
     @@old_primary_key = :account_number
     @@skip = %w( 1 2 )
+    @@charset_from = "latin1"
 
     def run
       append :condition => Proc.new { |old,new| ( 15..20 ).include?( old[ :account_number ] ) }

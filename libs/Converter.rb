@@ -80,6 +80,20 @@ module Datamith
   #
   # If the new database already has a record with the same primary key value, it will be updated ( given that it has changed and that update hasn't be explicitly forbidden ).
   #
+  # === Charset conversion
+  #
+  # By default, the from and to tables are supposed to be in UTF-8. You can set the desired charset using @@charset_from and @@charset_to. A conversion
+  # will be processed if they differ.
+  #
+  # Example :
+  #
+  #   class Product < Converter
+  #     @@charset_from = "latin1"
+  #     ...
+  #   end
+  #
+  # Here, @@charset_to keeps its default to UTF-8 and a conversion is done from latin1 to UTF-8.
+  #
   # === Changing field name
   #
   # Let's say now that we want to change the <tt>price</tt> field name into <tt>pricing</tt>, the convert rule would have been :
