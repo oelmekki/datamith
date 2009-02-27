@@ -15,8 +15,13 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 require "mysql"
+require "forwardable"
+
 module Datamith
   class Database # :nodoc:
+    extend Forwardable
+    def_delegators :@co, :list_tables
+    def_delegators :@co, :list_fields
 
     def initialize( config, mode=:read )
       @co = Mysql.new config[ 'host' ], config[ 'user' ], config[ 'passwd' ], config[ 'database' ]

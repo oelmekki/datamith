@@ -38,7 +38,7 @@ module Datamith
 
     def run() # :nodoc:
       # find the tables files
-      files = Dir.glob( ROOT + "/tables/*" ).sort
+      files = Dir.glob( ROOT + "/tables/*.rb" ).sort
       files.each do |file|
         if ( converter_class = load_rules file )
 
@@ -64,6 +64,41 @@ module Datamith
 
     def self.appended=( val ) # :nodoc:
       @@appended = val
+    end
+
+    # find a list of the old tables.
+    # Used in rake tables:generate.
+    def old_tables() # :nodoc:
+      @old_db.list_tables()
+    end
+
+    def generate_table_file( table_name ) # :nodoc:
+      table_dir = File.expand_path( File.join( File.dirname(__FILE__), '..', 'tables' ) )
+      table_files = Dir.new( table_dir ).entries.select { |f| f =~ /(\d+_)?\w+\.rb/ }
+      used_numbers = table_files.collect { |f| f =~ /^\d+/ && $&.to_i }.compact.sort
+      table_classes = table_files.collect { |f| f =~ /(\d+_)?(.*?)\.rb$/; $2 }.compact
+      class_name = table_name.camelize
+
+      if table_classes.include? class_name
+        puts "Error: #{class_name} already defined. Skipped."
+        return false
+      end
+
+      number = ( ( used_numbers.last || 0 ) / 10 * 10 ) + 10
+      filename = "#{number}_#{class_name}.rb"
+
+      convert_string = ""
+      @old_db.list_fields( table_name ).fetch_fields.each do |field|
+        convert_string << "    convert " + ( field.is_num? ? ":integer" : ":string" ) + ", :#{field.name}\n"
+      end
+
+      template = File.read( "#{File.dirname(__FILE__)}/templates/table.tpl" )
+      template.gsub!( /__CLASS_NAME__/, class_name ).gsub!( /__TABLE__/, table_name ).gsub!( /__CONVERTS__/, convert_string.chomp )
+
+      puts "generating #{filename}"
+      f = File.new( "#{table_dir}/#{filename}", 'w' ) 
+      f.puts template
+      f.close
     end
 
     private
