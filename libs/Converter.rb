@@ -14,6 +14,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
+require 'iconv'
+
 module Datamith
   # == Presentation
   #
@@ -192,6 +194,10 @@ module Datamith
       # determine what can be done. To be overloaded in the child classes.
       # :on_error can be one of :warn, :silent or :abort
       @@config = { :insert => true, :update => true, :on_error => :warn }
+
+      #charset handling
+      @@charset_from = "UTF-8"
+      @@charset_to = "UTF-8"
     end
    
     init()
@@ -234,7 +240,11 @@ module Datamith
 
       when :string, :date, :datetime
         format = '"%s"'
-        @old_attrs[ old_name ] = '' if @old_attrs[ old_name ] == nil
+        if @old_attrs[ old_name ] == nil
+          @old_attrs[ old_name ] = '' 
+        else
+          check_encoding( old_name )
+        end
 
       when :int, :integer, :timestamp
         case @old_attrs[ old_name ] 
@@ -341,6 +351,14 @@ module Datamith
       res
     end
 
+    def self.charset_from()
+      class_variable_get :@@charset_from
+    end
+
+    def self.charset_to()
+      class_variable_get :@@charset_to
+    end
+
     protected
 
     def update( primary_value ) # :nodoc:
@@ -403,6 +421,12 @@ module Datamith
     def query_type_error( type ) # :nodoc:
       printf "%s: %s explicitly forbidden.\n", @@config[ :on_error ].to_s, type.to_s if @@config[ :on_error ] != :silent and not Datamith::Runner::DUMP
       exit 1 if @@config[ :on_error ] == :abort
+    end
+  end
+
+  def check_encoding( old_name )
+    if self.charset_from != self.charset_to
+      @old_attrs[ old_name ] = Iconv.conv( self.charset_from, self.charset_to, @old_attrs[ old_name ] )
     end
   end
 end
