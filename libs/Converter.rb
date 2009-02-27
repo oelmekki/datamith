@@ -422,11 +422,11 @@ module Datamith
       printf "%s: %s explicitly forbidden.\n", @@config[ :on_error ].to_s, type.to_s if @@config[ :on_error ] != :silent and not Datamith::Runner::DUMP
       exit 1 if @@config[ :on_error ] == :abort
     end
-  end
 
-  def check_encoding( old_name )
-    if self.charset_from != self.charset_to
-      @old_attrs[ old_name ] = Iconv.conv( self.charset_from, self.charset_to, @old_attrs[ old_name ] )
+    def check_encoding( old_name )
+      if self.class.charset_from != self.class.charset_to
+        @old_attrs[ old_name ] = Iconv.conv( self.class.charset_from, self.class.charset_to, @old_attrs[ old_name ] )
+      end
     end
   end
 end
