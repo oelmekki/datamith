@@ -43,10 +43,10 @@ module Datamith
         if ( converter_class = load_rules file )
 
           # get the old records
-          old_records = @old_db.get converter_class.old_table
+          old_records = old_database.get converter_class.old_table
 
           old_records.each do |attrs|
-            converter = converter_class.new attrs, @old_db, @new_db
+            converter = converter_class.new attrs, old_database, new_database
             converter.run
 
             # run the query
@@ -69,7 +69,7 @@ module Datamith
     # find a list of the old tables.
     # Used in rake tables:generate.
     def old_tables() # :nodoc:
-      @old_db.list_tables()
+      old_database.list_tables()
     end
 
     def generate_table_file( table_name ) # :nodoc:
@@ -88,7 +88,7 @@ module Datamith
       filename = "#{number}_#{class_name}.rb"
 
       convert_string = ""
-      @old_db.list_fields( table_name ).fetch_fields.each do |field|
+      old_database.list_fields( table_name ).fetch_fields.each do |field|
         convert_string << "    convert " + ( field.is_num? ? ":integer" : ":string" ) + ", :#{field.name}\n"
       end
 
@@ -120,6 +120,14 @@ module Datamith
       end
 
       return false
+    end
+
+    def old_database # :nodoc:
+      @old_db
+    end
+
+    def new_database # :nodoc:
+      @new_db
     end
   end
 end
