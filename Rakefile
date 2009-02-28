@@ -15,6 +15,12 @@ def default_config?
   @config[ 'database_from' ] == default and @config[ 'database_to' ] == default
 end
 
+def intersects_tables_to_convert( array )
+  selected = @config[ 'tables_to_convert' ]
+  return array if ( selected.nil? or selected.empty? )
+  selected & array
+end
+
 task :default => :convert
 
 desc "Lauch the conversion"
@@ -38,11 +44,11 @@ if default_config?
 else
   namespace :tables do
 
-    desc "Generate table files for all the tables of the source database"
+    desc "Generate table files for all the tables"
     task :populate do
       require "#{ROOT}/libs/Runner.rb"
       d = Datamith::Runner.new
-      d.old_tables.each do |old_table|
+      intersects_tables_to_convert( d.old_tables ).each do |old_table|
         d.generate_table_file( old_table )
       end
     end
@@ -51,7 +57,7 @@ else
       begin
         require "#{ROOT}/libs/Runner.rb"
         d = Datamith::Runner.new
-        d.old_tables.each do |old_table|
+        intersects_tables_to_convert( d.old_tables ).each do |old_table|
           desc "Generate table file for #{old_table}"
           task old_table.intern do
             d.generate_table_file( old_table )

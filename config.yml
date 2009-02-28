@@ -9,3 +9,9 @@ database_to:
   user: user
   passwd: password
   database: database_name
+
+# Give here the list of tables to convert.
+# The order will be preserved, so you can
+# set them in the order you want them to be
+# proceeded.
+tables_to_convert: []
