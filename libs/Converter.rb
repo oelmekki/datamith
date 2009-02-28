@@ -380,7 +380,7 @@ module Datamith
 
       @new_attrs.each { |attr,val|
         next if attr == self.class.new_primary_key
-        setters << sprintf( "%s = %s,", e(attr.to_s), val )
+        setters << sprintf( "`%s` = %s,", e(attr.to_s), val )
       }
 
       unless @@config[ :update ]
@@ -404,7 +404,7 @@ module Datamith
       fields, values = "", ""
       
       @new_attrs.each { |attr,val|
-        fields << sprintf( "%s,", e(attr.to_s) )
+        fields << sprintf( "`%s`,", e(attr.to_s) )
         values << sprintf( "%s,", val )
       }
 
@@ -439,7 +439,11 @@ module Datamith
 
     def check_encoding( old_name )
       if self.class.charset_from != self.class.charset_to
-        @old_attrs[ old_name ] = Iconv.conv( self.class.charset_from, self.class.charset_to, @old_attrs[ old_name ] )
+        begin
+          @old_attrs[ old_name ] = Iconv.conv( self.class.charset_from, self.class.charset_to, @old_attrs[ old_name ] )
+        rescue Iconv::IllegalSequence
+          p $!
+        end
       end
     end
   end

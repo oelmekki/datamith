@@ -36,10 +36,19 @@ module Datamith
     def query( query )
       return false if @mode == :read
 
-      @co.query query
-      if @co.error.length > 0
-        puts @co.error
+      begin
+        @co.query query
+        if @co.error.length > 0
+          puts @co.error
+        end
+      rescue Mysql::Error
+        puts "\n\nA Mysql error stop the process!\n"
+        puts $!
+        puts "\nThe query was :"
+        puts query
+        exit 1
       end
+
       return @co.insert_id
     end
 

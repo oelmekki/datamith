@@ -51,7 +51,7 @@ if default_config?
 else
   namespace :tables do
 
-    all_tables = intersects_tables_to_convert( runner( true ).old_tables )
+    all_tables = intersects_tables_to_convert( runner.old_tables )
     unless all_tables.empty?
       desc "Generate table files for all the tables"
       task :populate do
