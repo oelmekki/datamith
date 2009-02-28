@@ -41,10 +41,9 @@ describe Datamith::Runner do
     
     d = Datamith::Runner.new
     File.should_receive( :read ).and_return( str = "__CLASS_NAME__ __TABLE__ __CONVERTS__" )
-    str.should_receive( :gsub! ).exactly( 3 ).times
-    #str.should_receive( :gsub! ).with( '/__CLASS_NAME__/', 'TableOne' )
-    #str.should_receive( :gsub! ).with( /__TABLE__/, 'table_one' )
-    #str.should_receive( :gsub! ).with( /__CONVERT__/, /convert :integer, :field_one.*?convert :string, :field_two/ )
+    str.should_receive( :gsub! ).with( /__CONVERTS__/, /convert :integer, :field_one.*?convert :string, :field_two/m )
+    str.should_receive( :gsub! ).with( /__TABLE__/, 'table_one' )
+    str.should_receive( :gsub! ).with( /__CLASS_NAME__/, 'TableOne' )
     file.should_receive( :puts )
     file.should_receive( :close )
     d.generate_table_file( 'table_one' )

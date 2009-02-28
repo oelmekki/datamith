@@ -29,8 +29,10 @@ module Datamith
     @@appended = Hash.new
 
     def initialize(dump=false) # :nodoc:
-      confile = File.open( "#{ROOT}/config.yml" )
+      confile = File.open( "#{ROOT}/config.yml" ) 
       config  = YAML::load( confile )
+      confile.close
+
       Datamith::Runner.const_set( "DUMP", dump )
       @old_db = Database.new config[ 'database_from' ]
       @new_db = Database.new( config[ 'database_to' ], :write )
@@ -93,7 +95,9 @@ module Datamith
       end
 
       template = File.read( "#{File.dirname(__FILE__)}/templates/table.tpl" )
-      template.gsub!( /__CLASS_NAME__/, class_name ).gsub!( /__TABLE__/, table_name ).gsub!( /__CONVERTS__/, convert_string.chomp )
+      template.gsub!( /__CLASS_NAME__/, class_name )
+      template.gsub!( /__TABLE__/, table_name )
+      template.gsub!( /__CONVERTS__/, convert_string.chomp )
 
       puts "generating #{filename}"
       f = File.new( "#{table_dir}/#{filename}", 'w' ) 

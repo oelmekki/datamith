@@ -1,11 +1,11 @@
 database_from:
-  host: localhost
+  host: host
   user: user
   passwd: password
   database: database_name
 
 database_to:
-  host: localhost
+  host: host
   user: user
   passwd: password
   database: database_name
