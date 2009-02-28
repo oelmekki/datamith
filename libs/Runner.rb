@@ -36,8 +36,6 @@ module Datamith
       Datamith::Runner.const_set( "DUMP", dump )
       @old_db = Database.new config[ 'database_from' ]
       @new_db = Database.new( config[ 'database_to' ], :write )
-
-      @table_dir = File.expand_path( File.join( File.dirname(__FILE__), '..', 'tables' ) )
     end
 
     def run() # :nodoc:
@@ -76,12 +74,9 @@ module Datamith
       old_database.list_tables()
     end
 
-    def existing_rule_files
-      Dir.new( @table_dir ).entries.select { |f| f =~ /(\d+_)?\w+\.rb/ }
-    end
-
     def generate_table_file( table_name ) # :nodoc:
-      table_files = existing_rule_files
+      table_dir = File.expand_path( File.join( File.dirname(__FILE__), '..', 'tables' ) )
+      table_files = Dir.new( table_dir ).entries.select { |f| f =~ /(\d+_)?\w+\.rb/ }
       used_numbers = table_files.collect { |f| f =~ /^\d+/ && $&.to_i }.compact.sort
       table_classes = table_files.collect { |f| f =~ /(\d+_)?(.*?)\.rb$/; $2 }.compact
       class_name = table_name.camelize
@@ -105,7 +100,7 @@ module Datamith
       template.gsub!( /__CONVERTS__/, convert_string.chomp )
 
       puts "generating #{filename}"
-      f = File.new( "#{@table_dir}/#{filename}", 'w' ) 
+      f = File.new( "#{table_dir}/#{filename}", 'w' ) 
       f.puts template
       f.close
     end
