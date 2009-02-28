@@ -6,6 +6,8 @@ require 'yaml'
 ROOT = File.dirname(__FILE__)
 $:.unshift( "#{ROOT}/libs" )
 
+require "#{ROOT}/libs/Runner.rb"
+
 File.open( File.expand_path( File.join(ROOT, "config.yml" ) ) ) do |confile|
   @config  = YAML::load( confile )
 end
@@ -15,58 +17,60 @@ def default_config?
   @config[ 'database_from' ] == default and @config[ 'database_to' ] == default
 end
 
-def intersects_tables_to_convert( array )
+def runner( arg=nil )
+  @runner ||= Datamith::Runner.new( arg )
+end
+
+def intersects_tables_to_convert( tables )
   selected = @config[ 'tables_to_convert' ]
-  return array if ( selected.nil? or selected.empty? )
-  selected & array
+  tables = selected & tables unless ( selected.nil? or selected.empty? )
+  rules = runner.existing_rule_files.collect { |f| f =~ /(\d+_)?(.*?)\.rb$/; $2 }.compact
+  tables.reject { |table| rules.include?( table.camelize ) }
+end
+
+def puts_at_exit( message )
+  Kernel.at_exit do
+    puts message
+  end
 end
 
 task :default => :convert
 
 desc "Lauch the conversion"
 task :convert do
-  require "#{ROOT}/libs/Runner.rb"
-  d = Datamith::Runner.new
-  d.run()
+  runner.run()
 end
 
 desc "Lauch the conversion and dump the sql instead of executing it"
 task :convert_dump do
-  require "#{ROOT}/libs/Runner.rb"
-  d = Datamith::Runner.new( true )
-  d.run()
+  runner( true ).run()
 end
 
 if default_config?
-  Kernel.at_exit do
-    puts "\nYou may automatically generate rule files if you fullfill config.yml first."
-  end
+  puts_at_exit "\nYou may automatically generate rule files if you fullfill config.yml first."
 else
   namespace :tables do
 
-    desc "Generate table files for all the tables"
-    task :populate do
-      require "#{ROOT}/libs/Runner.rb"
-      d = Datamith::Runner.new
-      intersects_tables_to_convert( d.old_tables ).each do |old_table|
-        d.generate_table_file( old_table )
+    all_tables = intersects_tables_to_convert( runner( true ).old_tables )
+    unless all_tables.empty?
+      desc "Generate table files for all the tables"
+      task :populate do
+        all_tables.each do |old_table|
+          runner.generate_table_file( old_table )
+        end
       end
     end
 
     namespace :generate do
       begin
-        require "#{ROOT}/libs/Runner.rb"
-        d = Datamith::Runner.new
-        intersects_tables_to_convert( d.old_tables ).each do |old_table|
+        intersects_tables_to_convert( runner.old_tables ).each do |old_table|
           desc "Generate table file for #{old_table}"
           task old_table.intern do
-            d.generate_table_file( old_table )
+            runner.generate_table_file( old_table )
           end
         end
       rescue
-        Kernel.at_exit do
-          puts "\nErrors while trying to read table names. Is config.yml ok?"
-        end
+        puts_at_exit "\nErrors while trying to read table names. Is config.yml ok?"
       end
     end
   end
