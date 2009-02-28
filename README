@@ -14,9 +14,33 @@ A rule is a class derivated from Datamith::Converter. It can :
 
 There is one rule file per table to convert, and each set of rules is lauched individually against each row. A rule file and the class it contains must be named accordingly. The filename can be prefixed with a number to set the order.
 
-== Configuration
+== Configuration and rake tasks
 
 You should set the hosts, users, passwords and databases in config.yml.
+
+As soon it is done, you're given some rake tasks to generate the rule files.
+
+Generating a file for all the tables :
+
+  rake tables:populate
+
+Generating a file for a specific table : ( assuming there is an "users" table )
+
+  rake tables:generate:users
+
+You may also set in this file the "tables_to_convert" key. I should be a
+list of the tables you want to be generated. The list order is preserved, so
+<tt>rake tables:populate</tt> with :
+
+  tables_to_convert: [ users, posts, comments ]
+
+will generate :
+
+  tables/10_users.rb
+  tables/20_posts.rb
+  tables/30_comments.rb
+
+No list or empty list means all the tables.
 
 == Execution
 
