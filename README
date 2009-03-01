@@ -48,7 +48,7 @@ When you're done with your rules, simply launch :
   rake convert
 
 If you prefer a dump as a sql file, you can use instead :
-  rake convert_dump
+  rake convert:dump
 
 ( You are responsible of the output redirection )
 

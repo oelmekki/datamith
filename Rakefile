@@ -17,8 +17,9 @@ def default_config?
   @config[ 'database_from' ] == default and @config[ 'database_to' ] == default
 end
 
-def runner( arg=nil )
-  @runner ||= Datamith::Runner.new( arg )
+def runner dump=nil
+  return Datamith::Runner.new( true ) if dump
+  @runner ||= Datamith::Runner.new
 end
 
 def existing_rules
@@ -44,9 +45,11 @@ task :convert do
   runner.run()
 end
 
-desc "Lauch the conversion and dump the sql instead of executing it"
-task :convert_dump do
-  runner( true ).run()
+namespace :convert do
+  desc "Lauch the conversion and dump the sql instead of executing it"
+  task :dump do
+    runner( :dump ).run()
+  end
 end
 
 if default_config?
