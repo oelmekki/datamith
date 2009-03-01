@@ -197,6 +197,8 @@ module Datamith
   #   end
 
   class Converter
+    attr_accessor :old_attrs, :new_attrs
+
     def self.init() # :nodoc:
       @@old_primary_key = :id
       @@new_primary_key = :id
@@ -221,6 +223,7 @@ module Datamith
       @new_db     = new_db
       @old_attrs  = attrs
       @new_attrs  = Hash.new
+      @table_mapping = Hash.new
     end
 
     # abstract method to be replaced by the table conversion rules in child class.
@@ -241,6 +244,7 @@ module Datamith
     # <tt>:datetime_to_timestamp</tt> convert, as the name say, from datetime to timestamp and <tt>:timestamp_to_datetime</tt> do the opposite.
     def convert( type, old_name, new_name=nil )
       new_name ||= old_name 
+      @table_mapping[ old_name ] = new_name
 
       case type
       when :datetime_to_timestamp
@@ -279,6 +283,25 @@ module Datamith
       @new_attrs[ new_name ] = sprintf( format, e( @old_attrs[ old_name ] ) )
     end
 
+    # Use this method to use your own method to convert the field +old_field+.
+    # If you don't specify +new_field+, it will has the same value that +old_field+.
+    #
+    # You must provide a block that will do the conversion. In this block, you can
+    # access the data from the old row with +old_attrs+ and the data from the new
+    # row with +new_attrs+
+    #
+    # You can also give a method name, as a symbol, in place of the block. 
+    #
+    def manual_convert( old_field, new_field=nil, method=nil, &block )
+      new_field ||= old_field
+      @table_mapping[ old_field ] = new_field
+      if method
+        self.send( method )
+      else
+        yield
+      end
+    end
+
     # When append is called, the inserted primary key will be recorded and
     # will be retrievable with Converter#appended_FK. This let you keeping track of the foreign keys.
     #
@@ -308,7 +331,7 @@ module Datamith
       # there's no need to process any longer if the records has been asked to be skipped
       if @@skip.include? primary_value
         @@results[ :skipped ] += 1
-          printf '_' unless Datamith::Runner::dump # skip requested by user
+          printf '_' if Datamith::Runner::exec # skip requested by user
         return false
       end
 
@@ -321,7 +344,7 @@ module Datamith
           # skip records with no changes
           if @new_db.match self.class.new_table, @new_attrs
             @@results[ :nochange ] += 1
-            printf '.' unless Datamith::Runner::dump  # no change
+            printf '.' if Datamith::Runner::exec  # no change
             return false
           end
 
@@ -375,13 +398,28 @@ module Datamith
 
     protected
 
-    def update( primary_value ) # :nodoc:
-      setters = "set "
-
-      @new_attrs.each { |attr,val|
+    def setters( diff_attrs={} )
+      setter_str = "set "
+      diff_attrs.each { |attr,val|
         next if attr == self.class.new_primary_key
-        setters << sprintf( "`%s` = %s,", e(attr.to_s), val )
+        next if @new_db.match_field( self.class.new_table, @new_attrs[ self.class.new_primary_key ], attr, @new_attrs[ attr ], self.class.new_primary_key  )
+        setter_str << sprintf( "`%s` = %s,", e(attr.to_s), val )
       }
+
+      setter_str
+    end
+
+    def update( primary_value ) # :nodoc:
+      # grep the values that changed.
+      diff_attrs, raw_new_attrs = Hash.new, Hash.new
+      @old_attrs.each { |attr,val| diff_attrs[ @table_mapping[ attr ] ] = val unless @table_mapping[ attr ].nil? }
+      @new_attrs.each do |attr,val| 
+        if val =~ /^["']?(.*?)['"]?$/
+          raw_new_attrs[ attr ] = $1
+        end
+      end
+      diff_attrs = diff_attrs.diff raw_new_attrs
+      diff_attrs.each { |k,v| v.replace( @new_attrs[ k ] ) if @new_attrs.has_key?( k ) and @new_attrs[ k ].is_a?( String ) }
 
       unless @@config[ :update ]
         query_type_error :update
@@ -389,11 +427,37 @@ module Datamith
       end
 
       @@results[ :updated ] += 1
-      query = sprintf( "update %s %s where %s = %s", e( self.class.new_table ), setters.chop, e(self.class.new_primary_key.to_s), e( primary_value ) )
-      if Datamith::Runner::dump
+      case
+      when Datamith::Runner::dump
+        query = sprintf( "update %s %s where %s = %s", e( self.class.new_table ), setters( diff_attrs ).chop, e(self.class.new_primary_key.to_s), e( primary_value ) )
         puts query
+
+      when Datamith::Runner::diff
+        puts "\nrecord #{primary_value} changed :\n"
+
+        diff_attrs.each do |attr,val|
+          next if attr == self.class.new_primary_key
+          old = nil
+          @table_mapping.each { |k,v| old = k if v == attr } # retrieve the old attr name matching the new attr name
+          val =~ /^['"]?(.*?)['"]?$/
+          raw_val = $1
+          next if @new_db.match_field( self.class.new_table, @new_attrs[ self.class.new_primary_key ], attr, raw_val, self.class.new_primary_key  )
+
+          if old and old != :nil
+            if @old_attrs[ old ] == raw_val
+              puts "    `#{old}` => `#{attr}`"
+            else
+              puts "\n-    `#{old}` : #{@old_attrs[ old ]}"
+              puts "+    `#{attr}` : #{raw_val}\n\n"
+            end
+          else
+            puts "+    `#{attr}` : #{raw_val}\n"
+          end
+        end
+
       else
         printf 'U'  # update
+        query = sprintf( "update %s %s where %s = %s", e( self.class.new_table ), setters( diff_attrs ).chop, e(self.class.new_primary_key.to_s), e( primary_value ) )
         @new_db.query query
       end
     end
@@ -415,7 +479,8 @@ module Datamith
 
       @@results[ :inserted ] += 1
       query = sprintf( "insert into %s( %s ) values( %s )", e( self.class.new_table.to_s ), fields.chop, values.chop )
-      if Datamith::Runner::dump 
+      case
+      when Datamith::Runner::dump 
         puts query
 
         if Datamith::Runner::appended[ self.class.new_table ] and @condition_proc.call( @old_attrs, @new_attrs )
@@ -423,6 +488,12 @@ module Datamith
           puts "set #{mysql_var} = last_insert_id()"
           Datamith::Runner::appended[ self.class.new_table ][ primary_value ] = mysql_var
         end
+
+      when Datamith::Runner::diff
+        attributes = ""
+        @new_attrs.each { |attr,val| attributes << "    `#{attr}` = #{val},\n" }
+        puts "\nNew record :\n#{attributes.chop}"
+
       else
         printf 'I' # insert
         inserted = @new_db.query  query
@@ -433,7 +504,7 @@ module Datamith
     end
 
     def query_type_error( type ) # :nodoc:
-      printf "%s: %s explicitly forbidden.\n", @@config[ :on_error ].to_s, type.to_s if @@config[ :on_error ] != :silent and not Datamith::Runner::dump
+      printf "%s: %s explicitly forbidden.\n", @@config[ :on_error ].to_s, type.to_s if @@config[ :on_error ] != :silent and Datamith::Runner::exec
       exit 1 if @@config[ :on_error ] == :abort
     end
 

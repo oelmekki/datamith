@@ -92,5 +92,12 @@ module Datamith
 
       return ( res.num_rows == 0 ? false : true )
     end
+
+    def match_field( table, pk_value, field, value, pk_name="id" )
+      query = sprintf( "select %s from %s where %s = %s", field, table, pk_name, e(pk_value) )
+      res = @co.query query
+
+      return res.fetch_hash[ field.to_s ] == value
+    end
   end
 end

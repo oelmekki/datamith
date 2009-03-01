@@ -55,6 +55,21 @@ class Hash
     end
     self.replace(r)
   end
+
+  # Return a new hash containing pairs that don't match in each hash
+  def diff( other_hash )
+    orig = self.dup
+    dest = other_hash.dup
+
+    orig.each do |k,v|
+      if dest[ k ] == v
+        orig.delete( k ) 
+        dest.delete( k )
+      end
+    end
+
+    orig.merge dest
+  end
 end
 
 class String

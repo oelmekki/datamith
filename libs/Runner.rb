@@ -28,12 +28,12 @@ module Datamith
     # tables can be converted too.
     @@appended = Hash.new
 
-    def initialize(dump=false) # :nodoc:
+    def initialize(mode=:exec) # :nodoc:
       confile = File.open( "#{ROOT}/config.yml" ) 
       config  = YAML::load( confile )
       confile.close
 
-      self.class.dump = dump
+      self.class.mode = mode
       @old_db = Database.new config[ 'database_from' ]
       @new_db = Database.new( config[ 'database_to' ], :write )
 
@@ -110,12 +110,20 @@ module Datamith
       f.close
     end
 
-    def self.dump # :nodoc:
-      @@dump
+    def self.mode=( mode ) # :nodoc:
+      @@mode = mode
     end
 
-    def self.dump= bool # :nodoc:
-      @@dump = bool
+    def self.dump # :nodoc:
+      @@mode == :dump
+    end
+
+    def self.exec # :nodoc:
+      @@mode == :exec
+    end
+
+    def self.diff
+      @@mode == :diff
     end
 
     private
