@@ -21,11 +21,14 @@ def runner( arg=nil )
   @runner ||= Datamith::Runner.new( arg )
 end
 
+def existing_rules
+  runner.existing_rule_files.num_string_sort.collect { |f| f =~ /(\d+_)?(.*?)\.rb$/; $2 }.compact
+end
+
 def intersects_tables_to_convert( tables )
   selected = @config[ 'tables_to_convert' ]
   tables = selected & tables unless ( selected.nil? or selected.empty? )
-  rules = runner.existing_rule_files.collect { |f| f =~ /(\d+_)?(.*?)\.rb$/; $2 }.compact
-  tables.reject { |table| rules.include?( table.camelize ) }
+  tables.reject { |table| existing_rules.include?( table.camelize ) }
 end
 
 def puts_at_exit( message )
@@ -72,6 +75,11 @@ else
       rescue
         puts_at_exit "\nErrors while trying to read table names. Is config.yml ok?"
       end
+    end
+
+    desc "Display the order the rule files will be proceeded"
+    task :order do
+      existing_rules.each { |r| puts r }
     end
   end
 end

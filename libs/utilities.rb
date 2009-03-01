@@ -62,3 +62,9 @@ class String
     self.gsub(/(?:^|_)(.)/) { $1.upcase }
   end
 end
+
+class Array
+  def num_string_sort
+    sort { |x,y| x.to_i <=> y.to_i }
+  end
+end
