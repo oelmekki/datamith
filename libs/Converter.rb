@@ -308,7 +308,7 @@ module Datamith
       # there's no need to process any longer if the records has been asked to be skipped
       if @@skip.include? primary_value
         @@results[ :skipped ] += 1
-          printf '_' unless Datamith::Runner::DUMP # skip requested by user
+          printf '_' unless Datamith::Runner::dump # skip requested by user
         return false
       end
 
@@ -321,7 +321,7 @@ module Datamith
           # skip records with no changes
           if @new_db.match self.class.new_table, @new_attrs
             @@results[ :nochange ] += 1
-            printf '.' unless Datamith::Runner::DUMP  # no change
+            printf '.' unless Datamith::Runner::dump  # no change
             return false
           end
 
@@ -390,7 +390,7 @@ module Datamith
 
       @@results[ :updated ] += 1
       query = sprintf( "update %s %s where %s = %s", e( self.class.new_table ), setters.chop, e(self.class.new_primary_key.to_s), e( primary_value ) )
-      if Datamith::Runner::DUMP
+      if Datamith::Runner::dump
         puts query
       else
         printf 'U'  # update
@@ -415,7 +415,7 @@ module Datamith
 
       @@results[ :inserted ] += 1
       query = sprintf( "insert into %s( %s ) values( %s )", e( self.class.new_table.to_s ), fields.chop, values.chop )
-      if Datamith::Runner::DUMP 
+      if Datamith::Runner::dump 
         puts query
 
         if Datamith::Runner::appended[ self.class.new_table ] and @condition_proc.call( @old_attrs, @new_attrs )
@@ -433,7 +433,7 @@ module Datamith
     end
 
     def query_type_error( type ) # :nodoc:
-      printf "%s: %s explicitly forbidden.\n", @@config[ :on_error ].to_s, type.to_s if @@config[ :on_error ] != :silent and not Datamith::Runner::DUMP
+      printf "%s: %s explicitly forbidden.\n", @@config[ :on_error ].to_s, type.to_s if @@config[ :on_error ] != :silent and not Datamith::Runner::dump
       exit 1 if @@config[ :on_error ] == :abort
     end
 

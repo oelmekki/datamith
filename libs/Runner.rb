@@ -33,7 +33,7 @@ module Datamith
       config  = YAML::load( confile )
       confile.close
 
-      Datamith::Runner.const_set( "DUMP", dump )
+      self.class.dump = dump
       @old_db = Database.new config[ 'database_from' ]
       @new_db = Database.new( config[ 'database_to' ], :write )
 
@@ -108,6 +108,14 @@ module Datamith
       f = File.new( "#{@table_dir}/#{filename}", 'w' ) 
       f.puts template
       f.close
+    end
+
+    def self.dump # :nodoc:
+      @@dump
+    end
+
+    def self.dump= bool # :nodoc:
+      @@dump = bool
     end
 
     private

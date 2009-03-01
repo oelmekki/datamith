@@ -5,6 +5,9 @@ require 'utilities'
 
 module Datamith
   class Runner
-    DUMP = false
+    def dump
+      false
+    end
   end
 end
+
