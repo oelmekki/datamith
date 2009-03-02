@@ -415,7 +415,8 @@ module Datamith
       @old_attrs.each { |attr,val| diff_attrs[ @table_mapping[ attr ] ] = val unless @table_mapping[ attr ].nil? }
       @new_attrs.each do |attr,val| 
         if val =~ /^["']?(.*?)['"]?$/
-          raw_new_attrs[ attr ] = $1
+          raw = $1.gsub( /\\/, '' )
+          raw_new_attrs[ attr ] = raw
         end
       end
       diff_attrs = diff_attrs.diff raw_new_attrs
@@ -441,6 +442,8 @@ module Datamith
           @table_mapping.each { |k,v| old = k if v == attr } # retrieve the old attr name matching the new attr name
           val =~ /^['"]?(.*?)['"]?$/
           raw_val = $1
+          raw_val.gsub( /\\/, '' )
+
           next if @new_db.match_field( self.class.new_table, @new_attrs[ self.class.new_primary_key ], attr, raw_val, self.class.new_primary_key  )
 
           if old and old != :nil
