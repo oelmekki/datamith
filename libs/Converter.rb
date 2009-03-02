@@ -311,6 +311,7 @@ module Datamith
     #
     # The Proc object must accept two arguments, old and new, which will be fill with the hashes of the old and the new values of the proceeded row. The block should return true or false, which determine if the row must be in append mode or not.
     def append( arg=nil )
+      @append_mode = true
       @condition_proc = ( arg ? arg[ :condition ] : Proc.new { |old,new| true } )
       Datamith::Runner::appended[ self.class.new_table ] ||= Hash.new
     end
@@ -336,7 +337,7 @@ module Datamith
       end
 
       # if the record is in appended mode, jump to the query build
-      unless Datamith::Runner::appended[ self.class.new_table ] and @condition_proc.call( @old_attrs, @new_attrs )
+      unless @append_mode and Datamith::Runner::appended[ self.class.new_table ] and @condition_proc.call( @old_attrs, @new_attrs )
 
         # there already is a record with this value for primary key
         if @new_db.record_exists? self.class.new_table, primary_value, self.class.new_primary_key
@@ -415,8 +416,7 @@ module Datamith
       @old_attrs.each { |attr,val| diff_attrs[ @table_mapping[ attr ] ] = val unless @table_mapping[ attr ].nil? }
       @new_attrs.each do |attr,val| 
         if val =~ /^["']?(.*?)['"]?$/
-          raw = $1.gsub( /\\/, '' )
-          raw_new_attrs[ attr ] = raw
+          raw_new_attrs[ attr ] = $1
         end
       end
       diff_attrs = diff_attrs.diff raw_new_attrs
@@ -442,8 +442,6 @@ module Datamith
           @table_mapping.each { |k,v| old = k if v == attr } # retrieve the old attr name matching the new attr name
           val =~ /^['"]?(.*?)['"]?$/
           raw_val = $1
-          raw_val.gsub( /\\/, '' )
-
           next if @new_db.match_field( self.class.new_table, @new_attrs[ self.class.new_primary_key ], attr, raw_val, self.class.new_primary_key  )
 
           if old and old != :nil
